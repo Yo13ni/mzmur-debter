@@ -1,0 +1,46 @@
+# pubspec.yaml
+
+name: mzmur
+description: A new Flutter project for managing Amharic poems.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: ^2.3.4
+  
+  google_fonts: ^6.2.1
+  # Removed permission_handler as it is not needed
+  device_info_plus: ^11.5.0 # CORRECTED VERSION based on error message
+  path: ^1.9.0
+  path_provider: ^2.1.5 # Reverted to your original, working version
+  file_picker: ^10.3.1 # The CRITICAL MAJOR UPDATE remains
+  share_plus: ^10.0.2
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+    - assets/background1.jpg
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/mezmur.png"
+  adaptive_icon_foreground: "assets/icons/mezmur.png"
+  adaptive_icon_background: "#26A69A"
