@@ -1,10 +1,13 @@
-# mzmur
+# መዝሙር ደብተር 
 
 A new Flutter project.
 
-## Getting Started
+## poem App (Songwriter & Lyric Manager)
 
-This project is a starting point for a Flutter application.
+
+An Android application for songwriters, poets, and creative writers to write, organize, and save lyrics locally.
+
+
 
 A few resources to get you started if this is your first Flutter project:
 
