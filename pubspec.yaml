@@ -16,7 +16,6 @@ dependencies:
     sdk: flutter
   sqflite: ^2.3.4
   
-  google_fonts: ^6.2.1
   # Removed permission_handler as it is not needed
   device_info_plus: ^11.5.0 # CORRECTED VERSION based on error message
   path: ^1.9.0
@@ -24,6 +23,7 @@ dependencies:
   file_picker: ^10.3.1 # The CRITICAL MAJOR UPDATE remains
   share_plus: ^10.0.2
   provider: ^6.1.2
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -35,7 +35,23 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/
+    - assets/images/
     - assets/background1.jpg
+    - assets/photo_2025-09-25_03-35-12.jpg
+    - assets/photo_2025-09-25_03-35-26.jpg
+    - assets/photo_2025-09-25_03-35-33.jpg
+    - assets/photo_2025-09-25_03-35-38.jpg
+  fonts:
+    - family: NotoSansEthiopic
+      fonts:
+        - asset: assets/fonts/NotoSansEthiopic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansEthiopic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSansEthiopic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/NotoSansEthiopic-Bold.ttf
+          weight: 700
 
 
 flutter_launcher_icons:

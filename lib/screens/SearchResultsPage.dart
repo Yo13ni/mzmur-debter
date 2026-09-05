@@ -1,98 +1,152 @@
 import 'package:flutter/material.dart';
 import '../db/db_helper.dart';
 import '../models/poem.dart';
-import 'poem_detail_page.dart'; // Import your new PoemDetailPage
+import '../services/api_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/ui_bits.dart';
+import 'poem_detail_page.dart';
 
-// A Stateless Widget that fetches and displays search results
-class SearchResultsPage extends StatelessWidget {
+class SearchResultsPage extends StatefulWidget {
   final String query;
 
   const SearchResultsPage({super.key, required this.query});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar( 
-        title: Text('የፍለጋ ውጤቶች: "$query"'),
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
-      ),
-      body: FutureBuilder<List<Poem>>(
-        // Call the searchPoems method from your DBHelper
-        future: DBHelper().searchPoems(query),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            // Display a user-friendly error message
-            return Center(child: Text('ፍለጋው አልተሳካም: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            // Handle the case where no results are found
-            return Center(
-              child: Text(
-                'ምንም መዝሙሮች አልተገኙም።',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-              ),
-            );
-          }
-
-          // If data is available, build the list of poems
-          final poems = snapshot.data!;
-          return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
-            itemCount: poems.length,
-            itemBuilder: (context, index) {
-              final poem = poems[index];
-              return _PoemSearchResultCard(
-                poem: poem,
-                onTap: () {
-                  // Navigate to the PoemDetailPage when a card is tapped
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PoemDetailPage(poem: poem),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
+  State<SearchResultsPage> createState() => _SearchResultsPageState();
 }
 
-// A reusable Card widget for displaying a single search result
-class _PoemSearchResultCard extends StatelessWidget {
-  final Poem poem;
-  final VoidCallback onTap;
+class _SearchResultsPageState extends State<SearchResultsPage> {
+  late final TextEditingController _controller;
+  late String _query;
+  final _db = DBHelper();
 
-  const _PoemSearchResultCard({
-    required this.poem,
-    required this.onTap,
-  });
+  @override
+  void initState() {
+    super.initState();
+    _query = widget.query;
+    _controller = TextEditingController(text: widget.query);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 4.0),
-      child: ListTile(
-        title: Text(
-          poem.title,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        size: 20, color: AppColors.ink),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'የመዝሙር ፍለጋ',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 18,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SearchField(
+                controller: _controller,
+                autofocus: _query.isEmpty,
+                onSubmitted: (q) => setState(() => _query = q.trim()),
+                onClear: () => setState(() => _query = ''),
+              ),
+            ),
+            Expanded(
+              child: _query.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'መዝሙር ለመፈለግ ይጻፉ...',
+                        style: TextStyle(color: AppColors.inkMuted),
+                      ),
+                    )
+                  : FutureBuilder<List<Poem>>(
+                      future: ApiService().getPoems(q: _query),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                                color: AppColors.accent),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Center(
+                              child: Text('ፍለጋው አልተሳካም: ${snapshot.error}',
+                                  style: const TextStyle(
+                                      color: AppColors.danger)));
+                        }
+                        final poems = snapshot.data ?? [];
+                        if (poems.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'ምንም መዝሙሮች አልተገኙም።',
+                              style: TextStyle(color: AppColors.inkMuted),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          itemCount: poems.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final poem = poems[index];
+                            return FutureBuilder<bool>(
+                              future: poem.id == null
+                                  ? Future.value(false)
+                                  : _db.isPoemFavorite(poem.id!),
+                              builder: (context, favSnap) {
+                                return HymnListTile(
+                                  title: poem.title,
+                                  subtitle: poem.category,
+                                  imageIndex: index,
+                                  isFavorite: favSnap.data ?? false,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PoemDetailPage(
+                                        poem: poem,
+                                        imageIndex: index,
+                                      ),
+                                    ),
+                                  ),
+                                  onFavorite: () async {
+                                    await _db.togglePoemFavorite(poem);
+                                    setState(() {});
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
-        subtitle: Text(
-          poem.content.length > 50
-              ? '${poem.content.substring(0, 50)}...'
-              : poem.content,
-        ),
-        trailing: Text(
-          poem.category,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        onTap: onTap,
       ),
     );
   }

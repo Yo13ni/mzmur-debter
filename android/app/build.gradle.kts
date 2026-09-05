@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.mzmur"
-        minSdk = 21 // Flutter default
+        minSdk = flutter.minSdkVersion // Flutter default
         targetSdk = 35 // Match compileSdk
         versionCode = flutter.versionCode
         versionName = flutter.versionName

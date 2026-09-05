@@ -12,6 +12,19 @@
 .swiftpm/
 migrate_working_dir/
 
+# Admin API
+admin/node_modules/
+admin/dist/
+admin/.env
+
+# Admin web (React)
+admin-web/node_modules/
+admin-web/dist/
+admin-web/.env
+
+# Local user-space PostgreSQL data (dev only)
+.pgdata/
+
 # IntelliJ related
 *.iml
 *.ipr

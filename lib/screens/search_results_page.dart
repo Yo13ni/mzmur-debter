@@ -37,7 +37,7 @@ class SearchResultsPage extends StatelessWidget {
                 child: ListTile(
                   title: Text(
                     poem.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.w400),
                   ),
                   subtitle: Text(
                     poem.content.length > 50

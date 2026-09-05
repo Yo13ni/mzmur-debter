@@ -1,121 +1,221 @@
 import 'package:flutter/material.dart';
-import '../db/db_helper.dart';
+import '../models/category.dart';
+import '../models/poem.dart';
+import '../services/api_service.dart';
+import '../theme/app_colors.dart';
+import '../widgets/soft_card.dart';
+import '../widgets/ui_bits.dart';
 import 'poem_list_page.dart';
+import 'SearchResultsPage.dart';
 
-class CategoriesPage extends StatelessWidget {
-  final dbHelper = DBHelper();
+class CategoriesPage extends StatefulWidget {
+  final VoidCallback? onOpenMore;
+  final void Function([String?])? onSearch;
 
-  CategoriesPage({super.key});
+  const CategoriesPage({super.key, this.onOpenMore, this.onSearch});
+
+  @override
+  State<CategoriesPage> createState() => _CategoriesPageState();
+}
+
+class _CategoriesPageState extends State<CategoriesPage> {
+  final _api = ApiService();
+  final _searchController = TextEditingController();
+  late Future<({List<Category> categories, Map<String, int> counts})> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<({List<Category> categories, Map<String, int> counts})> _load() async {
+    final categories = await _api.getCategories();
+    final poems = await _api.getPoems();
+    final counts = <String, int>{};
+    for (final Poem p in poems) {
+      final id = p.categoryId;
+      if (id != null) counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return (categories: categories, counts: counts);
+  }
+
+  void _refresh() => setState(() => _future = _load());
 
   @override
   Widget build(BuildContext context) {
-    // We use a FutureBuilder that waits for two futures to complete.
-    return FutureBuilder<List<dynamic>>(
-      future: Future.wait([
-        dbHelper.getCategoryCounts(), // This gets a Map<String, int>
-        dbHelper.getTotalPoemCount(), // This gets an int
-      ]),
-      builder: (context, snapshot) {
-        // Handle loading state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Colors.teal)),
-          );
-        }
-        // Handle error state
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Text(
-                'Error loading categories: ${snapshot.error}',
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            ),
-          );
-        }
-
-        // Data is available. Extract the results from the list.
-        final categoryCounts = snapshot.data![0] as Map<String, int>;
-        final totalCount = snapshot.data![1] as int;
-        final categories = categoryCounts.keys.toList();
-
-        return Scaffold(
-          appBar: AppBar(
-            // Display the total count in the app bar title
-            title: Text(
-              '$totalCount መዝሙሮች',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-              ),
-            ),
-            backgroundColor: Colors.teal.shade700,
-            foregroundColor: Colors.white,
-            elevation: 2,
-          ),
-          body: categories.isEmpty
-              ? const Center(
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: FutureBuilder<
+            ({List<Category> categories, Map<String, int> counts})>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.accent),
+              );
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.category, size: 80, color: Colors.grey),
-                      SizedBox(height: 16),
                       Text(
-                        'ምንም መዝሙር አልፃፉም',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                        'ሰርቨሩን ማግኘት አልተቻለም።\n${snapshot.error}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.danger),
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: _refresh,
+                        child: const Text('እንደገና ሞክር'),
                       ),
                     ],
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    final category = categories[index];
-                    final count = categoryCounts[category] ?? 0;
-                    return Card(
-                      elevation: 3,
-                      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.teal.shade100,
-                          child: Text(
-                            '${index + 1}',
-                            style: const TextStyle(
-                              color: Colors.teal,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          category,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '$count መዝሙሮች',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PoemListPage(category: category),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
                 ),
-        );
-      },
+              );
+            }
+
+            final categories = snapshot.data!.categories;
+            final counts = snapshot.data!.counts;
+
+            return RefreshIndicator(
+              color: AppColors.accent,
+              backgroundColor: AppColors.card,
+              onRefresh: () async => _refresh(),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: SoftCard(
+                        color: AppColors.card,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.menu_book_rounded,
+                                color: AppColors.ink, size: 26),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'የመዝሙር ደብተር',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.more_vert_rounded,
+                                  color: AppColors.ink),
+                              onPressed: widget.onOpenMore,
+                              tooltip: 'ተጨማሪ',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      child: SearchField(
+                        controller: _searchController,
+                        onSubmitted: (q) {
+                          if (q.trim().isEmpty) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  SearchResultsPage(query: q.trim()),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  if (categories.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Text(
+                          'ምንም ምድብ የለም',
+                          style: TextStyle(color: AppColors.inkMuted),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      sliver: SliverList.separated(
+                        itemCount: categories.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          final count = counts[category.id] ?? 0;
+                          return SoftCard(
+                            color: AppColors.card,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PoemListPage(
+                                  categoryId: category.id,
+                                  categoryName: category.name,
+                                ),
+                              ),
+                            ).then((_) => _refresh()),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        category.name,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '$count መዝሙሮች',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.inkMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

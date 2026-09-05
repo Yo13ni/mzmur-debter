@@ -1,44 +1,43 @@
-// lib/providers/app_config.dart
-
 import 'package:flutter/material.dart';
 
 class AppConfig extends ChangeNotifier {
-  // Use a default theme mode.
-  ThemeMode _themeMode = ThemeMode.system;
+  ThemeMode _themeMode = ThemeMode.light;
   ThemeMode get themeMode => _themeMode;
+  bool get isDark => _themeMode == ThemeMode.dark;
 
-  // Use a scaling factor for font size.
-  double _fontSizeScale = 1.0;
-  double get fontSizeScale => _fontSizeScale;
+  /// Discrete font size levels matching settings UI: 0=small, 1=medium, 2=large
+  int _fontSizeLevel = 1;
+  int get fontSizeLevel => _fontSizeLevel;
 
-  // Define limits for font size scaling
-  static const double _minFontSizeScale = 0.7;
-  static const double _maxFontSizeScale = 2.0;
+  static const List<double> _scales = [0.85, 1.0, 1.25];
+  double get fontSizeScale => _scales[_fontSizeLevel.clamp(0, 2)];
 
-  // Toggle dark/light theme
   void toggleTheme() {
-    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    _themeMode =
+        _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     notifyListeners();
   }
 
-  // Set theme to system default
-  void setSystemTheme() {
-    _themeMode = ThemeMode.system;
+  void setDarkMode(bool dark) {
+    _themeMode = dark ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
   }
 
-  // Increase font size
+  void setFontSizeLevel(int level) {
+    _fontSizeLevel = level.clamp(0, 2);
+    notifyListeners();
+  }
+
   void increaseFontSize() {
-    if (_fontSizeScale < _maxFontSizeScale) {
-      _fontSizeScale += 0.1;
+    if (_fontSizeLevel < 2) {
+      _fontSizeLevel++;
       notifyListeners();
     }
   }
 
-  // Decrease font size
   void decreaseFontSize() {
-    if (_fontSizeScale > _minFontSizeScale) {
-      _fontSizeScale -= 0.1;
+    if (_fontSizeLevel > 0) {
+      _fontSizeLevel--;
       notifyListeners();
     }
   }
