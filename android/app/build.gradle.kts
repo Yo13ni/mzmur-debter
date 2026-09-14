@@ -1,12 +1,21 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties().apply {
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+
 android {
     namespace = "com.example.mzmur"
-    compileSdk = 35 // Explicitly set to match log (android-34)
+    compileSdk = 36 // Android 16
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -20,9 +29,20 @@ android {
     defaultConfig {
         applicationId = "com.example.mzmur"
         minSdk = flutter.minSdkVersion // Flutter default
-        targetSdk = 35 // Match compileSdk
+        targetSdk = 36 // Android 16
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    signingConfigs {
+        if (keystoreProperties["storeFile"] != null) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
     }
 
     buildTypes {
@@ -32,7 +52,9 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         getByName("release") {
-            signingConfig = signingConfigs.getByName("debug") // Debug signing for now
+            if (keystoreProperties["storeFile"] != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isShrinkResources = true // Enable resource shrinking
             isMinifyEnabled = true // Enable code minification
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

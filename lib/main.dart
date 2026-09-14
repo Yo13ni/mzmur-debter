@@ -9,7 +9,6 @@ import 'screens/favorites_page.dart';
 import 'screens/add_poem_page.dart';
 import 'screens/more_page.dart';
 import 'screens/loading_page.dart';
-import 'screens/SearchResultsPage.dart';
 import 'db/db_helper.dart';
 import 'providers/app_config.dart';
 
@@ -79,39 +78,51 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+  late final PageController _pageController;
 
   late final List<Widget> _pages = [
-    CategoriesPage(onOpenMore: _openMore, onSearch: _openSearch),
+    const CategoriesPage(),
     const FavoritesPage(),
     const AddPoemPage(embedded: true),
+    const MorePage(embedded: true),
   ];
 
-  void _onTabTapped(int index) => setState(() => _currentIndex = index);
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
 
-  void _openMore() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const MorePage()),
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    if (index == _currentIndex) return;
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
     );
   }
 
-  void _openSearch([String? initial]) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SearchResultsPage(query: initial ?? ''),
-      ),
-    );
-  }
+  void _onPageChanged(int index) => setState(() => _currentIndex = index);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: _pages[_currentIndex],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        children: _pages,
+      ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
+        onSettings: () => _onTabTapped(3),
       ),
     );
   }

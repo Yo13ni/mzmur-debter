@@ -1,32 +1,38 @@
 import 'package:flutter/material.dart';
+import '../db/db_helper.dart';
 import '../models/category.dart';
 import '../models/poem.dart';
-import '../services/api_service.dart';
+import '../services/poem_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/soft_card.dart';
 import '../widgets/ui_bits.dart';
 import 'poem_list_page.dart';
-import 'SearchResultsPage.dart';
+import 'poem_detail_page.dart';
 
 class CategoriesPage extends StatefulWidget {
-  final VoidCallback? onOpenMore;
-  final void Function([String?])? onSearch;
-
-  const CategoriesPage({super.key, this.onOpenMore, this.onSearch});
+  const CategoriesPage({super.key});
 
   @override
   State<CategoriesPage> createState() => _CategoriesPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
-  final _api = ApiService();
+class _CategoriesPageState extends State<CategoriesPage>
+    with AutomaticKeepAliveClientMixin {
+  final _repo = PoemRepository();
+  final _db = DBHelper();
   final _searchController = TextEditingController();
+  String _filter = '';
   late Future<({List<Category> categories, Map<String, int> counts})> _future;
+  late final Future<List<Poem>> _allPoems;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    _allPoems = _repo.getPoems();
   }
 
   @override
@@ -35,21 +41,14 @@ class _CategoriesPageState extends State<CategoriesPage> {
     super.dispose();
   }
 
-  Future<({List<Category> categories, Map<String, int> counts})> _load() async {
-    final categories = await _api.getCategories();
-    final poems = await _api.getPoems();
-    final counts = <String, int>{};
-    for (final Poem p in poems) {
-      final id = p.categoryId;
-      if (id != null) counts[id] = (counts[id] ?? 0) + 1;
-    }
-    return (categories: categories, counts: counts);
-  }
+  Future<({List<Category> categories, Map<String, int> counts})> _load() =>
+      _repo.getCategoriesWithCounts();
 
   void _refresh() => setState(() => _future = _load());
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -88,6 +87,98 @@ class _CategoriesPageState extends State<CategoriesPage> {
             final categories = snapshot.data!.categories;
             final counts = snapshot.data!.counts;
 
+            if (_filter.isNotEmpty) {
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: SearchField(
+                      controller: _searchController,
+                      onChanged: (v) =>
+                          setState(() => _filter = v.trim().toLowerCase()),
+                    ),
+                  ),
+                  Expanded(
+                    child: FutureBuilder<List<Poem>>(
+                      future: _allPoems,
+                      builder: (context, poemsSnap) {
+                        if (poemsSnap.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                                color: AppColors.accent),
+                          );
+                        }
+                        if (poemsSnap.hasError) {
+                          return const Center(
+                            child: Text(
+                              'ፍለጋው አልተሳካም።',
+                              style: TextStyle(color: AppColors.danger),
+                            ),
+                          );
+                        }
+                        final words = _filter
+                            .split(RegExp(r'\s+'))
+                            .where((w) => w.isNotEmpty)
+                            .toList();
+                        final results =
+                            (poemsSnap.data ?? const <Poem>[]).where((p) {
+                          final title = p.title.toLowerCase();
+                          final content = p.content.toLowerCase();
+                          return words.every((w) =>
+                              title.contains(w) || content.contains(w));
+                        }).toList();
+
+                        if (results.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              'ምንም መዝሙሮች አልተገኙም።',
+                              style: TextStyle(color: AppColors.inkMuted),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          itemCount: results.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final poem = results[index];
+                            return FutureBuilder<bool>(
+                              future: poem.id == null
+                                  ? Future.value(false)
+                                  : _db.isPoemFavorite(poem.id!),
+                              builder: (context, favSnap) {
+                                return HymnListTile(
+                                  title: poem.title,
+                                  subtitle: poem.category,
+                                  imageIndex: index,
+                                  isFavorite: favSnap.data ?? false,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PoemDetailPage(
+                                        poem: poem,
+                                        imageIndex: index,
+                                      ),
+                                    ),
+                                  ),
+                                  onFavorite: () async {
+                                    await _db.togglePoemFavorite(poem);
+                                    setState(() {});
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            }
+
             return RefreshIndicator(
               color: AppColors.accent,
               backgroundColor: AppColors.card,
@@ -97,53 +188,11 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: SoftCard(
-                        color: AppColors.card,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.menu_book_rounded,
-                                color: AppColors.ink, size: 26),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'የመዝሙር ደብተር',
-                                style: TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.more_vert_rounded,
-                                  color: AppColors.ink),
-                              onPressed: widget.onOpenMore,
-                              tooltip: 'ተጨማሪ',
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                       child: SearchField(
                         controller: _searchController,
-                        onSubmitted: (q) {
-                          if (q.trim().isEmpty) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  SearchResultsPage(query: q.trim()),
-                            ),
-                          );
-                        },
+                        onChanged: (v) =>
+                            setState(() => _filter = v.trim().toLowerCase()),
                       ),
                     ),
                   ),

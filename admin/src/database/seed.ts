@@ -33,8 +33,8 @@ async function seedAdmin(pool: Pool): Promise<void> {
 
   const passwordHash = await bcrypt.hash(password, 12);
   await pool.query(
-    `INSERT INTO admins (email, password_hash, name)
-     VALUES ($1, $2, $3)`,
+    `INSERT INTO admins (email, password_hash, name, role)
+     VALUES ($1, $2, $3, 'super_admin')`,
     [email, passwordHash, name],
   );
 

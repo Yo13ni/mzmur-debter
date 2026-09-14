@@ -12,8 +12,12 @@ class FavoritesPage extends StatefulWidget {
   State<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
+class _FavoritesPageState extends State<FavoritesPage>
+    with AutomaticKeepAliveClientMixin {
   final dbHelper = DBHelper();
+
+  @override
+  bool get wantKeepAlive => true;
 
   Future<void> _removeFavorite(Poem poem) async {
     final confirmed = await showDialog<bool>(
@@ -43,6 +47,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(

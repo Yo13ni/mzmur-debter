@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/poem.dart';
@@ -23,11 +24,43 @@ class PoemDetailPage extends StatefulWidget {
 class _PoemDetailPageState extends State<PoemDetailPage> {
   final dbHelper = DBHelper();
   late Poem _poem;
+  final _contentController = TextEditingController();
+  final _contentFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _poem = widget.poem;
+    _contentController.text = _poem.content;
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    _contentFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _selectAllContent() {
+    _contentFocusNode.requestFocus();
+    _contentController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _contentController.text.length,
+    );
+  }
+
+  Future<void> _copyContent() async {
+    final text = _poem.content;
+    if (text.trim().isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ተቀድቷል', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.primary,
+        duration: Duration(seconds: 1),
+      ),
+    );
   }
 
   Future<void> _share() async {
@@ -74,18 +107,6 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
         ),
       ),
     );
-  }
-
-  List<String> get _stanzas {
-    final parts = _poem.content
-        .split(RegExp(r'\n\s*\n'))
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-    if (parts.isEmpty && _poem.content.trim().isNotEmpty) {
-      return [_poem.content.trim()];
-    }
-    return parts;
   }
 
   @override
@@ -154,7 +175,7 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
                         ),
                       ),
                     const SizedBox(height: 20),
-                    Text(
+                    SelectableText(
                       _poem.title,
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -176,21 +197,22 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
                         style: TextStyle(color: AppColors.inkMuted),
                       )
                     else
-                      ..._stanzas.map(
-                        (stanza) => Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              stanza,
-                              style: TextStyle(
-                                fontSize:
-                                    baseFontSize * appConfig.fontSizeScale,
-                                height: 1.65,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                          ),
+                      TextField(
+                        controller: _contentController,
+                        focusNode: _contentFocusNode,
+                        readOnly: true,
+                        maxLines: null,
+                        style: TextStyle(
+                          fontSize: baseFontSize * appConfig.fontSizeScale,
+                          height: 1.65,
+                          color: AppColors.ink,
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
                         ),
                       ),
                   ],
@@ -206,13 +228,26 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
                   color: AppColors.card,
                   borderRadius: BorderRadius.circular(28),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceEvenly,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
                     _DetailAction(
                       icon: Icons.text_fields_rounded,
                       label: 'ፊደል',
                       onTap: () => _showFontSheet(appConfig),
+                    ),
+                    _DetailAction(
+                      icon: Icons.select_all,
+                      label: 'ሁሉንም ምረጥ',
+                      onTap: _selectAllContent,
+                    ),
+                    _DetailAction(
+                      icon: Icons.copy,
+                      label: 'ቅዳ',
+                      onTap: _copyContent,
                     ),
                     _DetailAction(
                       icon: Icons.share_outlined,
@@ -256,7 +291,7 @@ class _DetailAction extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

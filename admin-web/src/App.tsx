@@ -5,6 +5,7 @@ import { SubmissionsPage } from './pages/SubmissionsPage'
 import { SubmissionDetailPage } from './pages/SubmissionDetailPage'
 import { PoemsPage } from './pages/PoemsPage'
 import { CategoriesPage } from './pages/CategoriesPage'
+import { AdminsPage } from './pages/AdminsPage'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
           <Route path="/poems" element={<PoemsPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/admins" element={<AdminsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/submissions" replace />} />

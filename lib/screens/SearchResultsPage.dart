@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/db_helper.dart';
 import '../models/poem.dart';
-import '../services/api_service.dart';
+import '../services/poem_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/ui_bits.dart';
 import 'poem_detail_page.dart';
@@ -82,7 +82,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                       ),
                     )
                   : FutureBuilder<List<Poem>>(
-                      future: ApiService().getPoems(q: _query),
+                      future: PoemRepository().searchPoems(_query),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {

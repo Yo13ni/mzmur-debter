@@ -12,6 +12,7 @@ type AdminRow = {
   email: string;
   password_hash: string;
   name: string;
+  role: string;
 };
 
 @Injectable()
@@ -23,7 +24,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const { rows } = await this.db.query<AdminRow>(
-      `SELECT id, email, password_hash, name
+      `SELECT id, email, password_hash, name, role
        FROM admins
        WHERE email = $1`,
       [dto.email.toLowerCase().trim()],
@@ -50,6 +51,7 @@ export class AuthService {
         id: admin.id,
         email: admin.email,
         name: admin.name,
+        role: admin.role,
       },
     };
   }

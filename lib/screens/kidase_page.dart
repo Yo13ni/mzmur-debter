@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/category.dart';
-import '../services/api_service.dart';
+import '../services/poem_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/soft_card.dart';
 import 'poem_list_page.dart';
@@ -14,13 +14,13 @@ class KidasePage extends StatefulWidget {
 }
 
 class _KidasePageState extends State<KidasePage> {
-  final _api = ApiService();
+  final _repo = PoemRepository();
   late Future<List<Category>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = _api.getCategories();
+    _future = _repo.getCategories();
   }
 
   bool _isKidase(Category c) {

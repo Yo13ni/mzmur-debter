@@ -2,6 +2,8 @@ export type Admin = {
   id: string
   email: string
   name: string
+  role: string
+  createdAt?: string
 }
 
 export type LoginResponse = {

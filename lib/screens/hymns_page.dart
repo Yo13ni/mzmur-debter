@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/db_helper.dart';
 import '../models/poem.dart';
-import '../services/api_service.dart';
+import '../services/poem_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/ui_bits.dart';
 import 'poem_detail_page.dart';
@@ -15,7 +15,7 @@ class HymnsPage extends StatefulWidget {
 }
 
 class _HymnsPageState extends State<HymnsPage> {
-  final _api = ApiService();
+  final _repo = PoemRepository();
   final _db = DBHelper();
   final _searchController = TextEditingController();
   final _pageController = PageController(viewportFraction: 0.78);
@@ -32,7 +32,7 @@ class _HymnsPageState extends State<HymnsPage> {
   @override
   void initState() {
     super.initState();
-    _future = _api.getPoems();
+    _future = _repo.getPoems();
   }
 
   @override
@@ -42,7 +42,7 @@ class _HymnsPageState extends State<HymnsPage> {
     super.dispose();
   }
 
-  void _refresh() => setState(() => _future = _api.getPoems());
+  void _refresh() => setState(() => _future = _repo.getPoems());
 
   Future<void> _toggleFavorite(Poem poem) async {
     await _db.togglePoemFavorite(poem);

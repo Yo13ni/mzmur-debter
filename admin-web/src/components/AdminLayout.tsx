@@ -15,6 +15,10 @@ export function RequireAuth() {
 
 export function AdminLayout() {
   const { admin, logout } = useAuth()
+  const isSuper = admin?.role === 'super_admin'
+  const items = isSuper
+    ? [...nav, { to: '/admins', label: 'Admins' }]
+    : nav
 
   return (
     <div className="min-h-svh lg:grid lg:grid-cols-[240px_1fr]">
@@ -26,7 +30,7 @@ export function AdminLayout() {
           <p className="mt-1 text-sm text-white/65">Admin console</p>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-4 lg:flex-col lg:pb-6">
-          {nav.map((item) => (
+          {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

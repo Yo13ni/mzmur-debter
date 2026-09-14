@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../db/db_helper.dart';
 import '../models/poem.dart';
-import '../services/api_service.dart';
+import '../services/poem_repository.dart';
 import '../theme/app_colors.dart';
 import '../widgets/ui_bits.dart';
 import 'poem_detail_page.dart';
@@ -23,25 +23,17 @@ class PoemListPage extends StatefulWidget {
 
 class _PoemListPageState extends State<PoemListPage> {
   final dbHelper = DBHelper();
-  final _api = ApiService();
-  final _searchController = TextEditingController();
-  String _filter = '';
+  final _repo = PoemRepository();
   late Future<List<Poem>> _future;
 
   @override
   void initState() {
     super.initState();
-    _future = _api.getPoems(categoryId: widget.categoryId);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+    _future = _repo.getPoems(categoryId: widget.categoryId);
   }
 
   void _refresh() =>
-      setState(() => _future = _api.getPoems(categoryId: widget.categoryId));
+      setState(() => _future = _repo.getPoems(categoryId: widget.categoryId));
 
   Future<void> _toggleFavorite(Poem poem) async {
     await dbHelper.togglePoemFavorite(poem);
@@ -68,32 +60,18 @@ class _PoemListPageState extends State<PoemListPage> {
               );
             }
 
-            final all = snapshot.data ?? [];
-            final poems = _filter.isEmpty
-                ? all
-                : all
-                    .where((p) =>
-                        p.title.contains(_filter) ||
-                        p.content.contains(_filter))
-                    .toList();
+            final poems = snapshot.data ?? [];
 
             return Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
                   child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new_rounded,
                             size: 20, color: AppColors.ink),
                         onPressed: () => Navigator.pop(context),
-                      ),
-                      Expanded(
-                        child: SearchField(
-                          controller: _searchController,
-                          onChanged: (v) =>
-                              setState(() => _filter = v.trim()),
-                        ),
                       ),
                     ],
                   ),

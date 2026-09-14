@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/category.dart';
@@ -22,6 +23,8 @@ class ApiService {
   final http.Client _client;
   final String _baseUrl;
 
+  static const Duration _timeout = Duration(seconds: 10);
+
   Uri _uri(String path, [Map<String, String>? query]) {
     final base = _baseUrl.endsWith('/')
         ? _baseUrl.substring(0, _baseUrl.length - 1)
@@ -30,7 +33,7 @@ class ApiService {
   }
 
   Future<List<Category>> getCategories() async {
-    final res = await _client.get(_uri('/categories'));
+    final res = await _client.get(_uri('/categories')).timeout(_timeout);
     final data = _decodeList(res);
     return data
         .map((e) => Category.fromJson(e as Map<String, dynamic>))
@@ -47,7 +50,7 @@ class ApiService {
     }
     final res = await _client.get(
       _uri('/poems', query.isEmpty ? null : query),
-    );
+    ).timeout(_timeout);
     final data = _decodeList(res);
     return data
         .map((e) => Poem.fromJson(e as Map<String, dynamic>))
@@ -55,7 +58,7 @@ class ApiService {
   }
 
   Future<Poem> getPoem(String id) async {
-    final res = await _client.get(_uri('/poems/$id'));
+    final res = await _client.get(_uri('/poems/$id')).timeout(_timeout);
     final data = _decodeMap(res);
     return Poem.fromJson(data);
   }
@@ -79,7 +82,7 @@ class ApiService {
       _uri('/submissions'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
-    );
+    ).timeout(_timeout);
     return _decodeMap(res);
   }
 

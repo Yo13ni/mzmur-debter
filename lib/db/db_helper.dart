@@ -9,6 +9,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../models/category.dart';
 import '../models/poem.dart';
 
 class DBHelper {
@@ -42,13 +43,20 @@ class DBHelper {
     final path = join(dbPath, 'poems.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDb,
       onUpgrade: _upgradeDb,
     );
   }
 
   Future _createDb(Database db, int version) async {
+    await db.execute('''
+        CREATE TABLE categories(
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          sort_order INTEGER DEFAULT 0
+        )
+      ''');
     await db.execute('''
         CREATE TABLE poems(
           id TEXT PRIMARY KEY,
@@ -123,6 +131,15 @@ class DBHelper {
         await db.execute('ALTER TABLE poems ADD COLUMN category_id TEXT');
       } catch (_) {}
     }
+    if (oldVersion < 5) {
+      await db.execute('''
+          CREATE TABLE categories(
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            sort_order INTEGER DEFAULT 0
+          )
+        ''');
+    }
   }
 
   Future<bool> doesPoemExist(String title) async {
@@ -150,6 +167,74 @@ class DBHelper {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  }
+
+  Future<void> cacheCategories(List<Category> categories) async {
+    if (kIsWeb) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final c in categories) {
+      batch.insert(
+        'categories',
+        {'id': c.id, 'name': c.name, 'sort_order': c.sortOrder},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<Category>> getCachedCategories() async {
+    if (kIsWeb) return [];
+    final db = await database;
+    final rows = await db.query(
+      'categories',
+      orderBy: 'sort_order ASC, name ASC',
+    );
+    return rows
+        .map((r) => Category(
+              id: r['id'] as String,
+              name: r['name'] as String,
+              sortOrder: (r['sort_order'] as num?)?.toInt() ?? 0,
+            ))
+        .toList();
+  }
+
+  Future<void> cachePoems(List<Poem> poems) async {
+    if (kIsWeb) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final p in poems) {
+      batch.insert(
+        'poems',
+        {
+          if (p.id != null) 'id': p.id,
+          'title': p.title,
+          'content': p.content,
+          'category': p.category,
+          'category_id': p.categoryId,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<Poem>> getCachedPoems() async {
+    if (kIsWeb) return [];
+    final db = await database;
+    final rows = await db.query('poems');
+    return rows.map(Poem.fromMap).toList();
+  }
+
+  Future<List<Poem>> getPoemsByCategoryId(String categoryId) async {
+    if (kIsWeb) return [];
+    final db = await database;
+    final rows = await db.query(
+      'poems',
+      where: 'category_id = ?',
+      whereArgs: [categoryId],
+    );
+    return rows.map(Poem.fromMap).toList();
   }
 
   Future<int> updatePoem(Poem poem) async {

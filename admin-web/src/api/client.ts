@@ -1,4 +1,5 @@
 import type {
+  Admin,
   ApprovePayload,
   Category,
   LoginResponse,
@@ -153,6 +154,17 @@ export const api = {
   deletePoem(id: string) {
     return request<{ deleted: boolean }>(`/admin/poems/${id}`, {
       method: 'DELETE',
+    })
+  },
+
+  listAdmins() {
+    return request<Admin[]>('/admin/admins')
+  },
+
+  createAdmin(body: { email: string; name: string; password: string }) {
+    return request<Admin>('/admin/admins', {
+      method: 'POST',
+      body: JSON.stringify(body),
     })
   },
 }

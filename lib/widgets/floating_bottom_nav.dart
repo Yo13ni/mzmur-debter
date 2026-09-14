@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// 3-tab bar: categories, favorites, write — your app's real navigation.
+/// 3-tab bar: categories, favorites, write — plus a settings action.
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final VoidCallback? onSettings;
 
   const AppBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.onSettings,
   });
 
   @override
@@ -38,6 +40,12 @@ class AppBottomNav extends StatelessWidget {
             label: 'ፃፍ',
             selected: currentIndex == 2,
             onTap: () => onTap(2),
+          ),
+          _Item(
+            icon: Icons.settings_rounded,
+            label: 'ማስተካከከያ',
+            selected: currentIndex == 3,
+            onTap: onSettings ?? () {},
           ),
         ],
       ),
