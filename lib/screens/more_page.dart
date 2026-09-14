@@ -73,12 +73,7 @@ class MorePage extends StatelessWidget {
         ),
         const SizedBox(height: 28),
         const Text(
-          'Version 1.0.0',
-          style: TextStyle(color: AppColors.inkMuted, fontSize: 13),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          '© 2024 Sabbath School Mezmur',
+          'Version 2.0.0',
           style: TextStyle(color: AppColors.inkMuted, fontSize: 13),
         ),
       ],

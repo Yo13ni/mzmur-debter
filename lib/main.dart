@@ -14,7 +14,6 @@ import 'providers/app_config.dart';
 
 class Strings {
   static const String appTitle = 'የመዝሙር ደብተር';
-  static const String forSabbathStudents = 'ለሰንበት ተማሪዎች';
   static const String searchHint = 'መዝሙር ፈልግ';
   static const String emptySearchQuery = 'እባክዎ የፍለጋ ቃል ያስገቡ!';
   static const String searchFailed = 'ፍለጋው አልተሳካም: ';

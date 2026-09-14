@@ -42,10 +42,7 @@ class InfoPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'ለሰንበት ተማሪዎች',
-                  style: TextStyle(color: AppColors.inkMuted),
-                ),
+                
               ],
             ),
           ),
@@ -65,7 +62,7 @@ class InfoPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'ይህ የመዝሙር መተግበሪያ በኢትዮጵያ ኦርቶዶክስ ተዋህዶ ቤተክርስቲያን ስር ለሚገኙ አገልጋዮች በሙሉ ለመዝሙር ደብተርነት የሚያገለግል ሲሆን ተጠቃሚዎች ግጥሞችን በምድቦች መደርደር፣ ተወዳጅ ግጥሞችን በመለየት እና አዳዲስ ግጥሞችን በመጨመር እንዲሁም መዝሙሮችን በመላላክ መጠቀም ይችላሉ።\n\nበልዑል እግዚአብሔር እርዳታ በጽርሐ ጽዮን አብማ ማርያም ኮከበ ጽባሕ ሰንበት ትምህርት ቤት መዝሙር ክፍል ለአገልግሎትነት ይውል ዘንድ ተሰራ።',
+                  'ይህ የመዝሙር መተግበሪያ በኢትዮጵያ ኦርቶዶክስ ተዋህዶ ቤተክርስቲያን ስር ለሚገኙ ምእመናን በሙሉ ለመዝሙር ደብተርነት ያገለግል ዘንድ ተሰራ።\n',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.55,
@@ -85,7 +82,7 @@ class InfoPage extends StatelessWidget {
                 ),
                 const _ContactRow(
                   icon: Icons.calendar_today_outlined,
-                  text: '2017 ዓ.ም',
+                  text: '2019 ዓ.ም',
                 ),
               ],
             ),

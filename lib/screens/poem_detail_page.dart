@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/poem.dart';
@@ -41,72 +40,8 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
     super.dispose();
   }
 
-  void _selectAllContent() {
-    _contentFocusNode.requestFocus();
-    _contentController.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: _contentController.text.length,
-    );
-  }
-
-  Future<void> _copyContent() async {
-    final text = _poem.content;
-    if (text.trim().isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('ተቀድቷል', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.primary,
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-
   Future<void> _share() async {
     await Share.share('${_poem.title}\n\n${_poem.content}');
-  }
-
-  void _showFontSheet(AppConfig config) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'የፊደል መጠን',
-              style: TextStyle(fontWeight: FontWeight.w400, fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _FontChip(
-                  label: 'ትንሽ',
-                  selected: config.fontSizeLevel == 0,
-                  onTap: () => config.setFontSizeLevel(0),
-                ),
-                _FontChip(
-                  label: 'መካከለኛ',
-                  selected: config.fontSizeLevel == 1,
-                  onTap: () => config.setFontSizeLevel(1),
-                ),
-                _FontChip(
-                  label: 'ትልቅ',
-                  selected: config.fontSizeLevel == 2,
-                  onTap: () => config.setFontSizeLevel(2),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -157,23 +92,6 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
                 child: Column(
                   children: [
-                    if (_poem.category.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardLight,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Text(
-                          _poem.category,
-                          style: const TextStyle(
-                            color: AppColors.ink,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: 20),
                     SelectableText(
                       _poem.title,
@@ -208,6 +126,7 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
                           color: AppColors.ink,
                         ),
                         decoration: const InputDecoration(
+                          filled: false,
                           isDense: true,
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
@@ -234,21 +153,6 @@ class _PoemDetailPageState extends State<PoemDetailPage> {
                   spacing: 8,
                   runSpacing: 6,
                   children: [
-                    _DetailAction(
-                      icon: Icons.text_fields_rounded,
-                      label: 'ፊደል',
-                      onTap: () => _showFontSheet(appConfig),
-                    ),
-                    _DetailAction(
-                      icon: Icons.select_all,
-                      label: 'ሁሉንም ምረጥ',
-                      onTap: _selectAllContent,
-                    ),
-                    _DetailAction(
-                      icon: Icons.copy,
-                      label: 'ቅዳ',
-                      onTap: _copyContent,
-                    ),
                     _DetailAction(
                       icon: Icons.share_outlined,
                       label: 'አጋራ',
@@ -306,39 +210,6 @@ class _DetailAction extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FontChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FontChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: FilledButton(
-          onPressed: onTap,
-          style: FilledButton.styleFrom(
-            backgroundColor:
-                selected ? AppColors.cardLight : AppColors.bgDeep,
-            foregroundColor: AppColors.ink,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(label),
         ),
       ),
     );
