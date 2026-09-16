@@ -32,7 +32,7 @@ class _HymnsPageState extends State<HymnsPage> {
   @override
   void initState() {
     super.initState();
-    _future = _repo.getPoems();
+    _load();
   }
 
   @override
@@ -42,7 +42,16 @@ class _HymnsPageState extends State<HymnsPage> {
     super.dispose();
   }
 
-  void _refresh() => setState(() => _future = _repo.getPoems());
+  /// Shows cached poems instantly (works offline) while refreshing from the
+  /// server in the background.
+  void _load() {
+    _future = _repo.getPoems();
+    _repo.getPoems(forceRefresh: true).then((fresh) {
+      if (mounted) setState(() => _future = Future.value(fresh));
+    }).catchError((_) {});
+  }
+
+  void _refresh() => _load();
 
   Future<void> _toggleFavorite(Poem poem) async {
     await _db.togglePoemFavorite(poem);

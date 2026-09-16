@@ -219,6 +219,33 @@ class DBHelper {
     await batch.commit(noResult: true);
   }
 
+  /// Replaces the whole local catalog with a fresh server snapshot.
+  ///
+  /// Used for the unfiltered full fetch so the poems table always mirrors the
+  /// server after the first load (and stale/deleted poems are dropped).
+  Future<void> cacheAllPoems(List<Poem> poems) async {
+    if (kIsWeb) return;
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('poems');
+      final batch = txn.batch();
+      for (final p in poems) {
+        batch.insert(
+          'poems',
+          {
+            if (p.id != null) 'id': p.id,
+            'title': p.title,
+            'content': p.content,
+            'category': p.category,
+            'category_id': p.categoryId,
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await batch.commit(noResult: true);
+    });
+  }
+
   Future<List<Poem>> getCachedPoems() async {
     if (kIsWeb) return [];
     final db = await database;
@@ -416,13 +443,20 @@ class DBHelper {
   Future<List<Poem>> searchPoems(String query) async {
     if (kIsWeb) return [];
     final db = await database;
+    final q = _escapeLikePattern(query.trim());
     final maps = await db.query(
       'poems',
-      where: 'title LIKE ? OR content LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
+      where: "title LIKE ? ESCAPE '\\' OR content LIKE ? ESCAPE '\\'",
+      whereArgs: ['%$q%', '%$q%'],
     );
     return maps.map(Poem.fromMap).toList();
   }
+
+  /// Escapes SQL LIKE wildcards so user input is matched literally.
+  static String _escapeLikePattern(String input) => input
+      .replaceAll('\\', '\\\\')
+      .replaceAll('%', '\\%')
+      .replaceAll('_', '\\_');
 
   Future<Map<String, dynamic>> exportPoemsToJson(
       {Function(double)? onProgress}) async {

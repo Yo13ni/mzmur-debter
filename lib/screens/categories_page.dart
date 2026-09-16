@@ -23,7 +23,7 @@ class _CategoriesPageState extends State<CategoriesPage>
   final _searchController = TextEditingController();
   String _filter = '';
   late Future<({List<Category> categories, Map<String, int> counts})> _future;
-  late final Future<List<Poem>> _allPoems;
+  late Future<List<Poem>> _allPoems;
 
   @override
   bool get wantKeepAlive => true;
@@ -31,8 +31,8 @@ class _CategoriesPageState extends State<CategoriesPage>
   @override
   void initState() {
     super.initState();
-    _future = _load();
-    _allPoems = _repo.getPoems();
+    _loadCategories();
+    _loadPoems();
   }
 
   @override
@@ -41,10 +41,28 @@ class _CategoriesPageState extends State<CategoriesPage>
     super.dispose();
   }
 
-  Future<({List<Category> categories, Map<String, int> counts})> _load() =>
-      _repo.getCategoriesWithCounts();
+  /// Shows cached categories immediately (works offline) while refreshing from
+  /// the server in the background, then swaps in the fresh data.
+  void _loadCategories() {
+    _future = _repo.getCategoriesWithCounts();
+    _repo.getCategoriesWithCounts(forceRefresh: true).then((fresh) {
+      if (mounted) setState(() => _future = Future.value(fresh));
+    }).catchError((_) {});
+  }
 
-  void _refresh() => setState(() => _future = _load());
+  /// Same cache-first refresh for the poem list used by in-page search.
+  void _loadPoems() {
+    _allPoems = _repo.getPoems();
+    _repo.getPoems(forceRefresh: true).then((fresh) {
+      if (mounted) setState(() => _allPoems = Future.value(fresh));
+    }).catchError((_) {});
+  }
+
+  void _refresh() => _loadCategories();
+
+  /// Retries loading the poem list (inside search results) so a transient
+  /// first-load failure doesn't permanently break search.
+  void _retryPoems() => _loadPoems();
 
   @override
   Widget build(BuildContext context) {
@@ -184,10 +202,20 @@ class _CategoriesPageState extends State<CategoriesPage>
           );
         }
         if (poemsSnap.hasError) {
-          return const Center(
-            child: Text(
-              'ፍለጋው አልተሳካም።',
-              style: TextStyle(color: AppColors.danger),
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'ፍለጋው አልተሳካም።',
+                  style: TextStyle(color: AppColors.danger),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _retryPoems,
+                  child: const Text('እንደገና ሞክር'),
+                ),
+              ],
             ),
           );
         }

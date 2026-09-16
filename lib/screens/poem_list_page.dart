@@ -29,11 +29,21 @@ class _PoemListPageState extends State<PoemListPage> {
   @override
   void initState() {
     super.initState();
-    _future = _repo.getPoems(categoryId: widget.categoryId);
+    _load();
   }
 
-  void _refresh() =>
-      setState(() => _future = _repo.getPoems(categoryId: widget.categoryId));
+  /// Shows cached poems for the category instantly (works offline) and then
+  /// refreshes from the server in the background.
+  void _load() {
+    _future = _repo.getPoems(categoryId: widget.categoryId);
+    _repo
+        .getPoems(categoryId: widget.categoryId, forceRefresh: true)
+        .then((fresh) {
+      if (mounted) setState(() => _future = Future.value(fresh));
+    }).catchError((_) {});
+  }
+
+  void _refresh() => _load();
 
   Future<void> _toggleFavorite(Poem poem) async {
     await dbHelper.togglePoemFavorite(poem);

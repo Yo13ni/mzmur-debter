@@ -18,6 +18,7 @@ class SearchResultsPage extends StatefulWidget {
 class _SearchResultsPageState extends State<SearchResultsPage> {
   late final TextEditingController _controller;
   late String _query;
+  late Future<List<Poem>> _searchFuture;
   final _db = DBHelper();
 
   @override
@@ -25,12 +26,26 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
     super.initState();
     _query = widget.query;
     _controller = TextEditingController(text: widget.query);
+    _runSearch();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Searches the local cache instantly (works offline), then merges in fresh
+  /// server results when they arrive.
+  void _runSearch() {
+    final repo = PoemRepository();
+    final q = _query;
+    _searchFuture = repo.searchPoems(q);
+    repo.searchPoems(q, forceRefresh: true).then((fresh) {
+      if (mounted && q == _query) {
+        setState(() => _searchFuture = Future.value(fresh));
+      }
+    }).catchError((_) {});
   }
 
   @override
@@ -69,7 +84,10 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
               child: SearchField(
                 controller: _controller,
                 autofocus: _query.isEmpty,
-                onSubmitted: (q) => setState(() => _query = q.trim()),
+                onSubmitted: (q) => setState(() {
+                  _query = q.trim();
+                  if (_query.isNotEmpty) _runSearch();
+                }),
                 onClear: () => setState(() => _query = ''),
               ),
             ),
@@ -82,7 +100,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                       ),
                     )
                   : FutureBuilder<List<Poem>>(
-                      future: PoemRepository().searchPoems(_query),
+                      future: _searchFuture,
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {

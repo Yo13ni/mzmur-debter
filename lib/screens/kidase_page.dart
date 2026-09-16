@@ -20,7 +20,16 @@ class _KidasePageState extends State<KidasePage> {
   @override
   void initState() {
     super.initState();
+    _load();
+  }
+
+  /// Shows cached categories instantly (works offline) while refreshing from
+  /// the server in the background.
+  void _load() {
     _future = _repo.getCategories();
+    _repo.getCategories(forceRefresh: true).then((fresh) {
+      if (mounted) setState(() => _future = Future.value(fresh));
+    }).catchError((_) {});
   }
 
   bool _isKidase(Category c) {

@@ -10,6 +10,7 @@ import 'screens/add_poem_page.dart';
 import 'screens/more_page.dart';
 import 'screens/loading_page.dart';
 import 'db/db_helper.dart';
+import 'services/poem_repository.dart';
 import 'providers/app_config.dart';
 
 class Strings {
@@ -54,7 +55,7 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.dark(),
           darkTheme: AppTheme.dark(),
           home: FutureBuilder(
-            future: DBHelper().init(),
+            future: _bootstrap(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
                 return const HomeShell();
@@ -65,6 +66,16 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+
+  /// Opens SQLite then, on first load, kicks off a background sync of the full
+  /// catalog from the server into local storage. The UI is not blocked; the
+  /// poems become available offline as soon as the fetch completes.
+  Future<void> _bootstrap() async {
+    await DBHelper().init();
+    PoemRepository()
+        .getPoems(forceRefresh: true)
+        .then((_) {}, onError: (_) {});
   }
 }
 
